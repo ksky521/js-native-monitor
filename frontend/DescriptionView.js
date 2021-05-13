@@ -45,7 +45,6 @@ export class DescriptionView extends UI.VBox {
                 weight: 30,
             },
         ];
-        runtime.bridge.registerEvent('JSNative.add', this._onAdd.bind(this));
 
         // 顶部toolbar开始
         const topToolbar = new UI.Toolbar('jsna-toolbar', this.contentElement);
@@ -123,6 +122,28 @@ export class DescriptionView extends UI.VBox {
     }
     _fileLoadFailed(message) {
         self.Common.console.error('Failed to load file with following error: ' + message);
+    }
+    wasShown() {
+        this._apisSet = this._apisSet || new Set();
+        runtime.bridge.sendCommand('jsNative.getApis').then((apis) => {
+            apis.forEach((desc) => {
+                const name = desc.name;
+                if (this._apisSet.has(name)) {
+                    return;
+                }
+                this._apisSet.add(name);
+                const node = new DescriptionNode({
+                    name,
+                    method: desc.method,
+                    invoke: desc.invoke,
+                    args: desc.args,
+                });
+                this._nodes.push(node);
+                if (this._filter(node)) {
+                    this._dataGrid.insertChild(node);
+                }
+            });
+        });
     }
     async exportAll() {
         // TODO 导出json，这里可以用file API
@@ -227,19 +248,6 @@ export class DescriptionView extends UI.VBox {
             ? DataGrid.SortableDataGrid.NumericComparator
             : DataGrid.SortableDataGrid.StringComparator;
         this._dataGrid.sortNodes(comparator.bind(null, sortColumnId), !this._dataGrid.isSortOrderAscending());
-    }
-
-    _onAdd(message) {
-        const node = new DescriptionNode({
-            name: message.name,
-            method: message.method,
-            invoke: message.invoke,
-            args: message.args,
-        });
-        this._nodes.push(node);
-        if (this._filter(node)) {
-            this._dataGrid.insertChild(node);
-        }
     }
 }
 

@@ -12,6 +12,7 @@
     "license": "MIT",
     "devDependencies": {
         "@ecomfe/eslint-config": "^7.1.0",
+        "devtools-pro": "^0.0.1",
         "eslint": "^7.26.0",
         "js-native": "^1.2.4"
     }
