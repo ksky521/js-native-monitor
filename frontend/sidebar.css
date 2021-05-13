@@ -1,0 +1,21 @@
+ol.tree-outline {
+    overflow: auto;
+    flex: auto;
+    padding: 0;
+    margin: 0;
+}
+
+.tree-outline li {
+    height: 36px;
+    padding-right: 5px;
+    margin-top: 1px;
+    line-height: 34px;
+    border-top: 1px solid transparent;
+}
+
+.tree-outline li:not(.parent)::before {
+    display: none;
+}
+li span.title {
+    padding-left: 12px;
+}

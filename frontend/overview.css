@@ -1,0 +1,23 @@
+.js-native-overview-usage {
+    padding: 30px;
+}
+.js-native-overview-usage .welcome {
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+}
+.js-native-overview-usage p {
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.js-native-overview-usage li p {
+    line-height: 1;
+}
+.js-native-overview-usage li p a {
+    text-decoration: none;
+    color: #0366d6;
+}
+.js-native-overview-usage li p a:hover {
+    text-decoration: underline;
+}

@@ -1,0 +1,23 @@
+{
+    "extensions": [
+        {
+            "type": "view",
+            "location": "panel",
+            "id": "jsna_monitor",
+            "title": "jsNative monitor",
+            "order": 110,
+            "className": "JSNAMonitor.JSNAMonitor"
+        }
+    ],
+    "dependencies": ["ui", "components", "data_grid", "source_frame", "sdk"],
+    "scripts": [],
+    "modules": [
+        "jsna_monitor.js",
+        "jsna_monitor-legacy.js",
+        "JSNAMonitor.js",
+        "DescriptionView.js",
+        "TimeLineView.js",
+        "OverviewView.js"
+    ],
+    "resources": ["jsna.css", "overview.css", "sidebar.css"]
+}
