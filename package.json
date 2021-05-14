@@ -15,5 +15,8 @@
         "devtools-pro": "^0.0.1",
         "eslint": "^7.26.0",
         "js-native": "^1.2.4"
+    },
+    "dependencies": {
+        "@baidu/boxx": "^1.2.43"
     }
 }

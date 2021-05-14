@@ -2,6 +2,7 @@ export class DescriptionView extends UI.VBox {
     constructor(panel) {
         super(true);
         this._panel = panel;
+        this.setMinimumSize(500, 100);
 
         this._nodes = [];
         this._started = false;
@@ -23,6 +24,28 @@ export class DescriptionView extends UI.VBox {
                 weight: 50,
             },
             {
+                id: 'schema',
+                title: ls`Schema`,
+                visible: false,
+                hideable: true,
+                sortable: true,
+                weight: 20,
+            },
+            {
+                id: 'path',
+                title: ls`Path`,
+                visible: true,
+                sortable: true,
+                weight: 50,
+            },
+            {
+                id: 'authority',
+                title: ls`Authority`,
+                visible: true,
+                sortable: true,
+                weight: 20,
+            },
+            {
                 id: 'args',
                 title: ls`Args`,
                 visible: true,
@@ -37,12 +60,11 @@ export class DescriptionView extends UI.VBox {
                 weight: 60,
             },
             {
-                id: 'timestamp',
-                title: ls`Timestamp`,
-                visible: false,
-                sortable: true,
+                id: 'env',
+                title: ls`Env`,
+                visible: true,
                 hideable: true,
-                weight: 30,
+                weight: 60,
             },
         ];
 
@@ -60,6 +82,7 @@ export class DescriptionView extends UI.VBox {
         topToolbar.appendSeparator();
 
         const split = new UI.SplitWidget(true, true, 'jsna-split', 250);
+        // 增加css
         split.registerRequiredCSS('jsna_monitor/jsna.css');
 
         split.show(this.contentElement);
@@ -80,12 +103,18 @@ export class DescriptionView extends UI.VBox {
         this._dataGrid.setHeaderContextMenuCallback(this._innerHeaderContextMenu.bind(this));
         this._dataGrid.setRowContextMenuCallback(this._innerRowContextMenu.bind(this));
 
+        // 排序
         this._dataGrid.addEventListener(DataGrid.DataGrid.Events.SortingChanged, this._sortDataGrid.bind(this));
         this._dataGrid.setStickToBottom(true);
-        this._dataGrid.sortNodes(DataGrid.SortableDataGrid.NumericComparator.bind(null, 'name'), false);
+        this._dataGrid.sortNodes(DataGrid.SortableDataGrid.StringComparator.bind(null, 'name'), false);
+        this._dataGrid.sortNodes(DataGrid.SortableDataGrid.StringComparator.bind(null, 'authority'), false);
+        this._dataGrid.sortNodes(DataGrid.SortableDataGrid.StringComparator.bind(null, 'path'), false);
+        this._dataGrid.sortNodes(DataGrid.SortableDataGrid.StringComparator.bind(null, 'schema'), false);
+        this._dataGrid.sortNodes(DataGrid.SortableDataGrid.StringComparator.bind(null, 'method'), false);
         this._updateColumnVisibility();
 
-        const keys = ['method', 'name'];
+        // 过滤
+        const keys = ['method', 'name', 'path', 'schema', 'authority'];
         this._filterParser = new TextUtils.FilterParser(keys);
         this._suggestionBuilder = new UI.FilterSuggestionBuilder(keys);
 
@@ -125,6 +154,7 @@ export class DescriptionView extends UI.VBox {
     }
     wasShown() {
         this._apisSet = this._apisSet || new Set();
+        // 事件绑定
         runtime.bridge.sendCommand('jsNative.getApis').then((apis) => {
             apis.forEach((desc) => {
                 const name = desc.name;
@@ -134,6 +164,10 @@ export class DescriptionView extends UI.VBox {
                 this._apisSet.add(name);
                 const node = new DescriptionNode({
                     name,
+                    schema: desc.schema,
+                    path: desc.path,
+                    authority: desc.authority,
+                    env: desc.env,
                     method: desc.method,
                     invoke: desc.invoke,
                     args: desc.args,
@@ -240,6 +274,9 @@ export class DescriptionView extends UI.VBox {
         switch (sortColumnId) {
             case 'method':
             case 'name':
+            case 'schema':
+            case 'path':
+            case 'authority':
                 columnIsNumeric = false;
                 break;
         }
@@ -266,10 +303,14 @@ export class DescriptionNode extends DataGrid.SortableDataGridNode {
         switch (columnId) {
             case 'name':
             case 'method':
+            case 'schema':
+            case 'path':
+            case 'authority':
                 const cell = this.createTD(columnId);
                 cell.textContent = this.data[columnId];
                 return cell;
             case 'invoke':
+            case 'env':
             case 'args': {
                 const cell = this.createTD(columnId);
                 const obj = SDK.RemoteObject.fromLocalObject(this.data[columnId]);
@@ -284,13 +325,13 @@ export class DescriptionNode extends DataGrid.SortableDataGridNode {
     /**
      * @override
      */
-    element() {
-        const element = super.element();
-        element.classList.toggle('protocol-message-sent', this.data.direction === 'sent');
-        element.classList.toggle('protocol-message-recieved', this.data.direction !== 'sent');
-        element.classList.toggle('error', this.hasError);
-        return element;
-    }
+    // element() {
+    //     const element = super.element();
+    //     element.classList.toggle('protocol-message-sent', this.data.direction === 'sent');
+    //     element.classList.toggle('protocol-message-recieved', this.data.direction !== 'sent');
+    //     element.classList.toggle('error', this.hasError);
+    //     return element;
+    // }
 }
 
 export class InfoWidget extends UI.VBox {
@@ -299,6 +340,7 @@ export class InfoWidget extends UI.VBox {
 
         this._tabbedPane = new UI.TabbedPane();
         this._tabbedPane.appendTab('args', 'Args', new UI.Widget());
+        this._tabbedPane.appendTab('env', 'Env', new UI.Widget());
         this._tabbedPane.appendTab('invoke', 'Invoke', new UI.Widget());
         this._tabbedPane.show(this.contentElement);
         this._tabbedPane.selectTab('args');
@@ -309,12 +351,14 @@ export class InfoWidget extends UI.VBox {
         this._tabbedPane.setTabEnabled('invoke', true);
         if (!data) {
             this._tabbedPane.changeTabView('invoke', new UI.EmptyWidget(ls`No message selected`));
+            this._tabbedPane.changeTabView('env', new UI.EmptyWidget(ls`No message selected`));
             this._tabbedPane.changeTabView('args', new UI.EmptyWidget(ls`No message selected`));
             return;
         }
         this._tabbedPane.selectTab('args');
 
         this._tabbedPane.changeTabView('invoke', SourceFrame.JSONView.createViewSync(data.invoke));
+        this._tabbedPane.changeTabView('env', SourceFrame.JSONView.createViewSync(data.env));
         this._tabbedPane.changeTabView('args', SourceFrame.JSONView.createViewSync(data.args));
     }
 }
